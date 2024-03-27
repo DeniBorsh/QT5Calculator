@@ -17,5 +17,14 @@ public:
 
 private:
     Ui::MainWindow *ui;
+
+private slots:
+
+    void digit_buttons_clicked();
+    void on_buttonDot_clicked();
+    void unoperations_clicked();
+    void on_buttonAC_clicked();
+    void on_buttonEqual_clicked();
+    void binoperations_clicked();
 };
 #endif // MAINWINDOW_H
