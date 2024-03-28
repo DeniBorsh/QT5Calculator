@@ -1,8 +1,6 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 
-double firstNum = 0;
-
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
@@ -24,11 +22,6 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->buttonMult, SIGNAL(clicked()), this, SLOT(binoperations_clicked()));
     connect(ui->buttonPlus, SIGNAL(clicked()), this, SLOT(binoperations_clicked()));
     connect(ui->buttonMinus, SIGNAL(clicked()), this, SLOT(binoperations_clicked()));
-
-    ui->buttonDiv->setCheckable(true);
-    ui->buttonMult->setCheckable(true);
-    ui->buttonPlus->setCheckable(true);
-    ui->buttonMinus->setCheckable(true);
 }
 
 MainWindow::~MainWindow() {
@@ -42,94 +35,88 @@ void MainWindow::digit_buttons_clicked() {
         res.clear();
     }
 
-    QPushButton* button = static_cast<QPushButton*>(sender());
-    double result = (res + button->text()).toDouble();
-    ui->resultNumber->setText(QString::number(result, 'g', 15));
+    QString buttonText = static_cast<QPushButton*>(sender())->text();
+    res += buttonText;
+
+    if (!(ui->resultNumber->text().contains('.') && buttonText == "0"))
+        res = QString::number(res.toDouble(), 'g', 15);
+
+    ui->resultNumber->setText(res);
+    ui->fullExpression->setText(operation_ == NONE ? res : ui->fullExpression->text() + buttonText);
 }
 
 void MainWindow::on_buttonDot_clicked()
 {
-    QString resultNumberText { ui->resultNumber->text() };
-    if (!resultNumberText.contains('.'))
-        ui->resultNumber->setText(resultNumberText + '.');
+    QString res { ui->resultNumber->text() };
+    if (res == "+" || res == "-" || res == "x" || res == "/") {
+        ui->resultNumber->text().clear();
+        res.clear();
+    }
+    if (!res.contains('.')) {
+        ui->resultNumber->setText(res + '.');
+        ui->fullExpression->setText(ui->fullExpression->text() + ".");
+    }
 }
 
 void MainWindow::unoperations_clicked() {
-    QPushButton* button = static_cast<QPushButton*>(sender());
-    double result = (ui->resultNumber->text()).toDouble();
-    QString buttonText { button->text() };
-    if (buttonText == "+/-")
-        ui->resultNumber->setText(QString::number(result * -1, 'g', 15));
-    else if (buttonText == "%")
-        ui->resultNumber->setText(QString::number(result * 0.01, 'g', 15));
+    QString res { ui->resultNumber->text() };
+    if (res == "+" || res == "-" || res == "x" || res == "/")
+        return;
+
+    QString buttonText = static_cast<QPushButton*>(sender())->text();
+
+    if (buttonText == "+/-") {
+        ui->resultNumber->setText(QString::number(res.toDouble() * -1, 'g', 15));
+        ui->fullExpression->setText(ui->fullExpression->text() + "*(-1)");
+    }
+    else if (buttonText == "%") {
+        ui->resultNumber->setText(QString::number(res.toDouble() * 0.01, 'g', 15));
+        ui->fullExpression->setText(ui->fullExpression->text() + "*0.01");
+    }
 }
 
 void MainWindow::binoperations_clicked() {
-    QPushButton* button = static_cast<QPushButton*>(sender());
+    on_buttonEqual_clicked();
+    QString buttonText = static_cast<QPushButton*>(sender())->text();
 
-    firstNum = ui->resultNumber->text().toDouble();
+    first_num_ = ui->resultNumber->text().toDouble();
 
-    ui->resultNumber->setText(button->text());
-    button->setChecked(true);
+    setOperation(buttonText);
+    ui->resultNumber->setText(buttonText);
+    ui->fullExpression->setText(ui->fullExpression->text() + (buttonText == "x" ? "*" : buttonText));
 }
 
 void MainWindow::on_buttonAC_clicked() {
-    firstNum = 0;
+    first_num_ = 0;
     ui->resultNumber->setText("0");
+    ui->fullExpression->setText("0");
+    operation_ = NONE;
 }
 
 void MainWindow::on_buttonEqual_clicked() {
-    double result = firstNum;
-    double secondNum = ui->resultNumber->text().toDouble();
-    if (ui->buttonPlus->isChecked()) {
-        result += secondNum;
-        ui->buttonPlus->setChecked(false);
-    } else if (ui->buttonMinus->isChecked()) {
-        result -= secondNum;
-        ui->buttonMinus->setChecked(false);
-    } else if (ui->buttonMult->isChecked()) {
-        result *= secondNum;
-        ui->buttonMult->setChecked(false);
-    } else if (ui->buttonDiv->isChecked()) {
-        if (secondNum == 0)
-            result *= 0;
-        else
-            result /= secondNum;
-        ui->buttonDiv->setChecked(false);
-    } else {
-        result = secondNum;
+    double result = first_num_;
+
+    QString operation = ui->resultNumber->text();
+    double secondNum = operation.toDouble();
+
+    if (operation == "x" || operation == "/") secondNum = 1;
+
+    switch (operation_) {
+        case PLUS: result += secondNum; break;
+        case MINUS: result -= secondNum; break;
+        case MULT: result *= secondNum; break;
+        case DIV: result = secondNum == 0 ? result * secondNum : result / secondNum; break;
+        case NONE: result = secondNum; break;
     }
+
+    operation_ = NONE;
     ui->resultNumber->setText(QString::number(result));
+    ui->fullExpression->setText(QString::number(result));
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+void MainWindow::setOperation(QString operation) {
+    if (operation == "+") operation_ = PLUS;
+    else if (operation == "-") operation_ = MINUS;
+    else if (operation == "x") operation_ = MULT;
+    else if (operation == "/") operation_ = DIV;
+}

@@ -16,8 +16,19 @@ public:
     ~MainWindow();
 
 private:
-    Ui::MainWindow *ui;
+    enum Operation {
+        NONE,
+        PLUS,
+        MINUS,
+        MULT,
+        DIV
+    };
 
+    Ui::MainWindow *ui;
+    double first_num_ = 0;
+    Operation operation_ = Operation::NONE;
+
+    void setOperation(QString operation);
 private slots:
 
     void digit_buttons_clicked();
